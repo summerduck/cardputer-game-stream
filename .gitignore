@@ -1,0 +1,12 @@
+.DS_Store
+.pio/
+dist/
+rsvp-reader/test/out/
+rsvp-reader/test/books/
+rsvp-reader/test/miniz/
+rsvp-reader/test/miniz.zip
+# separate repositories living next to this one
+Bluetooth-Keyboard-Mouse-Emulator/
+cardputer-claude-os/
+PDAputer/
+__pycache__/
