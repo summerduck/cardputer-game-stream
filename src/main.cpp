@@ -39,6 +39,7 @@ struct Settings {
     uint8_t palette = 0;
     bool sound = true;
     uint8_t volume = 5;
+    uint8_t execution = emu::COMPATIBLE;
     bool stream = false;
     String dir = "/";
 } settings;
@@ -49,6 +50,7 @@ void loadSettings() {
     settings.palette = prefs.getUChar("palette", settings.palette) % emu::DMG_PALETTES;
     settings.sound = prefs.getBool("sound", settings.sound);
     settings.volume = std::min<int>(prefs.getUChar("volume", settings.volume), VOLUME_LEVELS);
+    settings.execution = prefs.getUChar("execution", settings.execution) % emu::EXECUTION_MODES;
     settings.stream = prefs.getBool("stream", settings.stream);
     settings.dir = prefs.getString("dir", settings.dir);
     prefs.end();
@@ -60,6 +62,7 @@ void saveSettings() {
     prefs.putUChar("palette", settings.palette);
     prefs.putBool("sound", settings.sound);
     prefs.putUChar("volume", settings.volume);
+    prefs.putUChar("execution", settings.execution);
     prefs.putBool("stream", settings.stream);
     prefs.putString("dir", settings.dir);
     prefs.end();
@@ -325,7 +328,7 @@ void applyVolume() { M5Cardputer.Speaker.setVolume(settings.sound ? VOLUME[setti
 enum class MenuResult { Resume, Quit };
 
 MenuResult menu() {
-    enum Item { RESUME, SCREEN, PALETTE, SOUND, VOLUME_ITEM, STREAM, KEYS, RESET, QUIT, ITEMS };
+    enum Item { RESUME, SCREEN, CPU, PALETTE, SOUND, VOLUME_ITEM, STREAM, KEYS, RESET, QUIT, ITEMS };
     std::vector<int> items;
     for (int i = 0; i < ITEMS; i++)
         if (i != PALETTE || !emu::isColor()) items.push_back(i);
@@ -342,6 +345,7 @@ MenuResult menu() {
                 switch (it) {
                     case RESUME: label = "Продолжить"; break;
                     case SCREEN: label = "Экран", value = screen::modeName((screen::Mode)settings.mode); break;
+                    case CPU: label = "CPU", value = emu::executionModeName((emu::ExecutionMode)settings.execution); break;
                     case PALETTE: label = "Цвета", value = emu::dmgPaletteName(settings.palette); break;
                     case SOUND: label = "Звук", value = settings.sound ? "вкл" : "выкл"; break;
                     case VOLUME_ITEM: label = "Громкость", value = String(settings.volume) + "/10"; break;
@@ -375,6 +379,10 @@ MenuResult menu() {
                 case SCREEN:
                     settings.mode = (settings.mode + screen::MODES + step) % screen::MODES;
                     screen::setMode((screen::Mode)settings.mode);
+                    break;
+                case CPU:
+                    settings.execution = (settings.execution + emu::EXECUTION_MODES + step) % emu::EXECUTION_MODES;
+                    emu::setExecutionMode((emu::ExecutionMode)settings.execution);
                     break;
                 case PALETTE:
                     settings.palette = (settings.palette + emu::DMG_PALETTES + step) % emu::DMG_PALETTES;
@@ -563,6 +571,7 @@ void play(const String &path) {
     String save = savePath(path);
     loadSave(save);
     emu::setDmgPalette(settings.palette);
+    emu::setExecutionMode((emu::ExecutionMode)settings.execution);
     applyVolume();
     lcd().fillScreen(BG);
     screen::resume();
@@ -615,7 +624,14 @@ void play(const String &path) {
         uint32_t t0 = micros();
         if (!emu::runFrame(render)) {
             screen::pause();
-            message("Игра упала", String("Ошибка: ") + emu::error(), "Сохранение записано.",
+            bool fastFailed = emu::executionMode() == emu::FAST;
+            if (fastFailed) {
+                settings.execution = emu::COMPATIBLE;
+                emu::setExecutionMode(emu::COMPATIBLE);
+                saveSettings();
+            }
+            message("Игра упала", String("Ошибка: ") + emu::error(),
+                    fastFailed ? "Быстрый CPU отключён; повтори запуск." : "Сохранение записано.",
                     "Любая клавиша — назад");
             writeSave(save);
             waitKey();

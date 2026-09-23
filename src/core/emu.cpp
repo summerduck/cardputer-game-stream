@@ -45,6 +45,7 @@ char titleText[17];
 const char *lastError = nullptr;
 jmp_buf crash;
 int dmgPalette = 0;
+ExecutionMode execution = COMPATIBLE;
 
 const uint8_t blank[4] = {0xFF, 0xFF, 0xFF, 0xFF};
 
@@ -252,9 +253,21 @@ bool runFrame(bool render) {
     gb.direct.frame_skip = !render;
     gb.display.frame_skip_count = false;
     if (setjmp(crash)) return false;
-    gb_run_frame(&gb);  // not the dual-fetch variant: it crashes Harry Potter (invalid opcode), ~8% slower only
+    // Dual-fetch is faster on the ESP32-S3, but some ROMs need the conservative runner.
+    if (execution == FAST)
+        gb_run_frame_dualfetch(&gb);
+    else
+        gb_run_frame(&gb);
     if (render && gb.cgb.cgbMode) memcpy(palette, gb.cgb.fixPalette, sizeof(gb.cgb.fixPalette));
     return true;
+}
+
+void setExecutionMode(ExecutionMode mode) { execution = mode < EXECUTION_MODES ? mode : COMPATIBLE; }
+ExecutionMode executionMode() { return execution; }
+
+const char *executionModeName(ExecutionMode mode) {
+    static const char *const names[] = {"совместимый", "быстрый*"};
+    return names[mode < EXECUTION_MODES ? mode : COMPATIBLE];
 }
 
 const char *error() { return lastError; }

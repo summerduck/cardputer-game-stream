@@ -26,6 +26,11 @@ when you open the menu, when you quit, and every 30 s if the game changed them.
 | `-` `=` | volume |
 | `` ` `` | menu: screen, colours for original Game Boy games, sound, stream, restart, quit |
 
+The pause menu also has a **CPU** profile. `совместимый` is the default and uses the conservative
+Walnut-CGB execution path. `быстрый*` uses Walnut-CGB dual-fetch dispatch; it can be about 8% faster
+on the ESP32-S3, but is experimental because some ROMs are known to crash with it. If that happens,
+the emulator saves the game and automatically returns to `совместимый` for the next launch.
+
 ## Streaming to an iPhone
 
 1. In the game list, press `P`. The stream stays on until you press `P` again. Turn it on here, before

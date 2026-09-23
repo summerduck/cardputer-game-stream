@@ -40,6 +40,10 @@ void unload();
 
 // One emulated frame (1/59.7 s). With render = false the picture is not drawn (frame skip).
 // Returns false if the game crashed the emulator (error() tells why).
+enum ExecutionMode : uint8_t { COMPATIBLE, FAST, EXECUTION_MODES };
+void setExecutionMode(ExecutionMode mode);
+ExecutionMode executionMode();
+const char *executionModeName(ExecutionMode mode);
 bool runFrame(bool render);
 const char *error();
 void setButtons(uint8_t pressed);
