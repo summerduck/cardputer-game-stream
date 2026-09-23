@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Wraps firmware.bin into a package for M5Launcher's WebUI "OTA Update" that also asks Launcher
-to create the 3 MB "gbrom" flash partition, where the emulator keeps the current game (src/flashrom.cpp).
+to create the 4 MB "gbrom" flash partition, where the emulator keeps the current game (src/flashrom.cpp).
 
 Launcher's web page reads the partition table at 0x8000 of the uploaded .bin, installs the app image
 and creates each data partition it lists at its declared size when the label isn't "spiffs" and
@@ -12,7 +12,7 @@ usage: make_installer.py firmware.bin out.bin
 import struct
 import sys
 
-ROM_SIZE = 0x300000  # 3 MB: Zelda Oracle / Link's Awakening DX (1 MB), Pokemon (1-2 MB) fit
+ROM_SIZE = 0x410000  # 4 MB games (Harry Potter, DKC, Rayman) + the header sector, in whole 64 KB mmap pages
 STUB = b"GBROM-STUB" + b"\x55" * (4096 - 10)
 
 

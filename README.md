@@ -55,12 +55,12 @@ The page can't keep the phone awake over plain `http`, so set Auto-Lock to a lon
 ## Memory
 
 The Cardputer ADV has no PSRAM, and with Wi-Fi on only about 68 KB of RAM is left. So the game is
-copied from the SD card into the 3 MB `gbrom` flash partition (once per game, a few seconds) and read
+copied from the SD card into the 4 MB `gbrom` flash partition (once per game, a few seconds) and read
 from there, mapped into memory: no RAM cache, no SD reads while playing. The partition is created by
 `gb-emulator-install.bin` (see below).
 
-A ROM bigger than 3 MB (Harry Potter, DKC, Rayman) or an install without the partition falls back to
-reading 2 KB pages from the SD card into a RAM cache. Page misses per frame, measured on the host over
+4 MB games (Harry Potter, DKC, Rayman) fit. A bigger ROM, or an install with the older 3 MB partition
+or none, falls back to reading 2 KB pages from the SD card into a RAM cache. Page misses per frame, measured on the host over
 90 s of scripted play:
 
 | Cache | Oracle of Seasons | Harry Potter 2 | Rayman | Link's Awakening (GB) |
@@ -82,6 +82,8 @@ Game Boy Color games need about 80 KB of cache, which leaves no room for Wi-Fi.
 
 Install through M5Launcher (WUI → OTA Update). For the first install, use `gb-emulator-install.bin`,
 which also creates the `gbrom` partition. Later updates can use the plain `firmware.bin`.
+M5Launcher keeps an existing `gbrom` at its old size, so to go from the 3 MB partition to 4 MB, first
+remove `gbrom` in Launcher's **PMan** (partition manager), then install `gb-emulator-install.bin`.
 
 ```sh
 pio run
