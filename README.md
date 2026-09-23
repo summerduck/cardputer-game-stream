@@ -16,15 +16,19 @@ when you open the menu, when you quit, and every 30 s if the game changed them.
 
 | Key | Game Boy |
 |---|---|
-| `;` `,` `.` `/` (arrows) or `W` `A` `S` `D` | D-pad |
-| `X` (or `K`, `L`) | A |
-| `Z` (or `J`) | B |
-| `Enter` (or `1`) | Start |
-| `Space` (or `2`) | Select |
+| `;` `,` `.` `/` (arrows, also with `fn`) | D-pad |
+| `X` | A |
+| `Z` | B |
+| `Enter` | Start |
+| `Space` | Select |
 | `\` | screen mode: zoom ×1.5 → 1:1 → whole frame → screen off |
 | `[` `]` (hold) | scroll the zoomed view up / down |
 | `-` `=` | volume |
-| `` ` `` | menu: screen, colours for original Game Boy games, sound, stream, restart, quit |
+| `` ` `` | menu: screen, colours for original Game Boy games, sound, stream, keys, restart, quit |
+
+The Game Boy buttons can be moved to other keys in the pause menu under **Клавиши**: pick a button, press
+Enter, then press the new key. A key already used by another button swaps with it. `` ` `` `\` `[` `]`
+`-` `=` `F` stay reserved. **Как было** restores the table above.
 
 The pause menu also has a **CPU** profile. `совместимый` is the default and uses the conservative
 Walnut-CGB execution path. `быстрый*` uses Walnut-CGB dual-fetch dispatch; it can be about 8% faster

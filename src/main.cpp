@@ -5,6 +5,8 @@
 #include <SD.h>
 #include <SPI.h>
 
+#include <ctype.h>
+
 #include <algorithm>
 #include <vector>
 
@@ -42,7 +44,11 @@ struct Settings {
     uint8_t execution = emu::COMPATIBLE;
     bool stream = false;
     String dir = "/";
+    // The key for each Game Boy button, in emu::Button bit order (A B Select Start → ← ↑ ↓).
+    // Letters lower case, '\n' Enter, '\t' Tab.
+    char keys[8] = {'x', 'z', ' ', '\n', '/', ',', ';', '.'};
 } settings;
+const char DEFAULT_KEYS[8] = {'x', 'z', ' ', '\n', '/', ',', ';', '.'};
 
 void loadSettings() {
     prefs.begin("gb", true);
@@ -53,6 +59,9 @@ void loadSettings() {
     settings.execution = prefs.getUChar("execution", settings.execution) % emu::EXECUTION_MODES;
     settings.stream = prefs.getBool("stream", settings.stream);
     settings.dir = prefs.getString("dir", settings.dir);
+    char keys[8];
+    if (prefs.getBytesLength("keys") == sizeof keys && prefs.getBytes("keys", keys, sizeof keys) == sizeof keys)
+        memcpy(settings.keys, keys, sizeof keys);
     prefs.end();
 }
 
@@ -65,6 +74,7 @@ void saveSettings() {
     prefs.putUChar("execution", settings.execution);
     prefs.putBool("stream", settings.stream);
     prefs.putString("dir", settings.dir);
+    prefs.putBytes("keys", settings.keys, sizeof settings.keys);
     prefs.end();
 }
 
@@ -98,18 +108,29 @@ void endPoll(const Keys &keys) {
     prevKeys = keys.k;
 }
 
-// Game Boy buttons held on the keyboard. D-pad: ; , . / (the arrow keys) or W A S D.
+bool held(const Keys &keys, char c) {
+    if (c == '\n') return keys.k.enter;
+    if (c == '\t') return keys.k.tab;
+    return keys.has(c) || keys.has(toupper(c));  // upper case while Aa is held
+}
+
+// Game Boy buttons held on the keyboard: settings.keys, plus the fn arrows for the D-pad.
 uint8_t gameButtons(const Keys &keys) {
     uint8_t b = 0;
-    if (keys.has(';') || keys.has('w') || keys.k.up) b |= emu::UP;
-    if (keys.has('.') || keys.has('s') || keys.k.down) b |= emu::DOWN;
-    if (keys.has(',') || keys.has('a') || keys.k.left) b |= emu::LEFT;
-    if (keys.has('/') || keys.has('d') || keys.k.right) b |= emu::RIGHT;
-    if (keys.has('x') || keys.has('k') || keys.has('l')) b |= emu::A;
-    if (keys.has('z') || keys.has('j')) b |= emu::B;
-    if (keys.k.enter || keys.has('1')) b |= emu::START;
-    if (keys.k.space || keys.has('2')) b |= emu::SELECT;
+    for (int i = 0; i < 8; i++)
+        if (held(keys, settings.keys[i])) b |= 1 << i;
+    if (keys.k.up) b |= emu::UP;
+    if (keys.k.down) b |= emu::DOWN;
+    if (keys.k.left) b |= emu::LEFT;
+    if (keys.k.right) b |= emu::RIGHT;
     return b;
+}
+
+String keyName(char c) {
+    if (c == '\n') return "Enter";
+    if (c == '\t') return "Tab";
+    if (c == ' ') return "пробел";
+    return String((char)toupper(c));
 }
 
 void waitKey() {
@@ -302,14 +323,95 @@ String pickRom() {
 // help and menu
 
 void drawHelp() {
-    static const char *ROWS6[][2] = {
-        {"; , . /", "крестовина"}, {"X    Z", "A    B"},           {"Enter", "Start"},
-        {"пробел", "Select"},      {"\\   [ ]", "экран, сдвиг"}, {"`   - =", "меню, громкость"},
+    const char *k = settings.keys;
+    String rows[6][2] = {
+        {keyName(k[6]) + " " + keyName(k[5]) + " " + keyName(k[7]) + " " + keyName(k[4]), "крестовина"},
+        {keyName(k[0]) + "    " + keyName(k[1]), "A    B"},
+        {keyName(k[3]), "Start"},
+        {keyName(k[2]), "Select"},
+        {"\\   [ ]", "экран, сдвиг"},
+        {"`   - =", "меню, громкость"},
     };
     lcd().fillScreen(BG);  // no header: six lines take the whole screen
     for (int i = 0; i < 6; i++) {
-        text(ROWS6[i][0], 4, i * 22, ACCENT);
-        text(ROWS6[i][1], 100, i * 22, FG);
+        text(fit(rows[i][0], 92), 4, i * 22, ACCENT);
+        text(rows[i][1], 100, i * 22, FG);
+    }
+}
+
+// Keys the game loop and the menu already use.
+bool reservedKey(char c) { return strchr("`\\[]-=f", c) != nullptr; }
+
+// Waits for a key to give a Game Boy button: its code, or 0 if cancelled with ` / Esc / Backspace.
+char captureKey(const String &button) {
+    footer("Клавиша для " + button + "…", "` — отмена");
+    while (true) {
+        Keys keys = poll();
+        char c = 0;
+        if (keys.back()) {
+            endPoll(keys);
+            return 0;
+        }
+        if (keys.enter()) c = '\n';
+        else if (keys.k.tab && !prevKeys.tab) c = '\t';
+        else
+            for (char w : keys.k.word)
+                if (keys.hit(w)) c = tolower(w);
+        endPoll(keys);
+        if (c && reservedKey(c)) footer(keyName(c) + " уже занята", "` — отмена");
+        else if (c) return c;
+        delay(10);
+    }
+}
+
+// Pause menu → Клавиши: one key per Game Boy button, a key taken from another button swaps with it.
+void keysMenu() {
+    static const int ORDER[8] = {6, 7, 5, 4, 0, 1, 3, 2};  // ↑ ↓ ← → A B Start Select
+    static const char *const NAMES[8] = {"A", "B", "Select", "Start", "вправо", "влево", "вверх", "вниз"};
+    constexpr int N = 10;  // the buttons, then "reset" and "help"
+    int sel = 0;
+    bool redraw = true;
+    while (true) {
+        if (redraw) {
+            lcd().fillScreen(BG);
+            header("Клавиши");
+            int first = firstVisible(sel, N);
+            for (int i = 0; i < ROWS && first + i < N; i++) {
+                int it = first + i;
+                if (it < 8) listRow(i, NAMES[ORDER[it]], keyName(settings.keys[ORDER[it]]), it == sel);
+                else listRow(i, it == 8 ? "Как было" : "Подсказка", "", it == sel);
+            }
+            footer("Enter — назначить", "` — назад");
+            redraw = false;
+        }
+        Keys keys = poll();
+        if (keys.up()) sel = (sel + N - 1) % N, redraw = true;
+        else if (keys.down()) sel = (sel + 1) % N, redraw = true;
+        else if (keys.back()) {
+            endPoll(keys);
+            return;
+        } else if (keys.enter()) {
+            endPoll(keys);
+            redraw = true;
+            if (sel == 8) {
+                memcpy(settings.keys, DEFAULT_KEYS, sizeof DEFAULT_KEYS);
+            } else if (sel == 9) {
+                drawHelp();
+                waitKey();
+                continue;
+            } else {
+                int b = ORDER[sel];
+                char c = captureKey(NAMES[b]);
+                if (!c) continue;
+                for (char &other : settings.keys)
+                    if (other == c) other = settings.keys[b];
+                settings.keys[b] = c;
+            }
+            saveSettings();
+            continue;
+        }
+        endPoll(keys);
+        delay(15);
     }
 }
 
@@ -414,9 +516,8 @@ MenuResult menu() {
                     }
                     break;
                 case KEYS:
-                    drawHelp();
                     endPoll(keys);
-                    waitKey();
+                    keysMenu();
                     break;
                 case RESET:
                     if (keys.enter()) {
