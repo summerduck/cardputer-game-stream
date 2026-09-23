@@ -16,7 +16,7 @@ const char *modeName(Mode m);
 void begin();
 void setMode(Mode m);
 Mode mode();
-void pan(int dir);  // -1 up, +1 down
+void pan(int lines);  // moves the view by frame lines: < 0 up, > 0 down
 
 // Hands emu::frame to the screen task if the previous one is done. Call after a rendered frame.
 // Until idle() the emulator must not draw: the task reads emu::frame (no copy, saves 23 KB).

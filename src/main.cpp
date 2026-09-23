@@ -603,8 +603,9 @@ void play(const String &path) {
             saveSettings();
         }
         if (keys.hit('f') || keys.hit('F')) screen::setHud(screen::hud()[0] ? "" : "...");
-        if (keys.hit('[')) screen::pan(-1);
-        if (keys.hit(']')) screen::pan(1);
+        // Held [ ] scroll one frame line per emulated frame: the whole zoom range in about 0.9 s.
+        if (keys.has('[')) screen::pan(-1);
+        if (keys.has(']')) screen::pan(1);
         if (keys.hit('-') || keys.hit('=')) {
             settings.volume = constrain(settings.volume + (keys.hit('=') ? 1 : -1), 1, VOLUME_LEVELS);
             applyVolume();

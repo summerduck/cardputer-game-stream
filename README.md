@@ -4,7 +4,7 @@ Game Boy and Game Boy Color emulator ([Walnut-CGB](https://github.com/Mr-PauI/Wa
 extras for the small screen:
 
 - **Readable screen modes.** `лупа ×1.5` fills the full 240 px width with no dropped pixel columns and
-  shows 90 of the 144 lines. `[` and `]` move the view (top / middle / bottom). `1:1` shows 135 lines
+  shows 90 of the 144 lines. Hold `[` or `]` to scroll the view up or down. `1:1` shows 135 lines
   pixel for pixel. `весь кадр` is the stock squeeze.
 - **Stream to a phone.** The Cardputer starts a Wi-Fi network, and Safari on the phone shows the game
   full screen. You play on the Cardputer keyboard or on the phone's touch buttons.
@@ -22,7 +22,7 @@ when you open the menu, when you quit, and every 30 s if the game changed them.
 | `Enter` (or `1`) | Start |
 | `Space` (or `2`) | Select |
 | `\` | screen mode: zoom ×1.5 → 1:1 → whole frame → screen off |
-| `[` `]` | move the zoomed view up / down |
+| `[` `]` (hold) | scroll the zoomed view up / down |
 | `-` `=` | volume |
 | `` ` `` | menu: screen, colours for original Game Boy games, sound, stream, restart, quit |
 

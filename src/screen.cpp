@@ -100,9 +100,9 @@ void setMode(Mode m) {
 
 Mode mode() { return current; }
 
-void pan(int dir) {
-    if (current == ZOOM) zoomPan = constrain(zoomPan + dir * ZOOM_PAN_MAX / 2, 0, ZOOM_PAN_MAX);
-    if (current == ONE) onePan = dir < 0 ? 0 : ONE_PAN_MAX;
+void pan(int lines) {
+    if (current == ZOOM) zoomPan = constrain(zoomPan + lines, 0, ZOOM_PAN_MAX);
+    if (current == ONE) onePan = constrain(onePan + lines, 0, ONE_PAN_MAX);
 }
 
 bool submit() {
