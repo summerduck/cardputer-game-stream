@@ -129,7 +129,7 @@ uint8_t gameButtons(const Keys &keys) {
 String keyName(char c) {
     if (c == '\n') return "Enter";
     if (c == '\t') return "Tab";
-    if (c == ' ') return "пробел";
+    if (c == ' ') return "Space";
     return String((char)toupper(c));
 }
 
@@ -255,11 +255,11 @@ String pickRom() {
         if (redraw) {
             lcd().fillScreen(BG);
             int roms = std::count_if(entries.begin(), entries.end(), [](const Entry &e) { return !e.dir; });
-            header(dir == "/" ? "Game Boy" : dir.substring(dir.lastIndexOf('/') + 1), String(roms) + " игр");
+            header(dir == "/" ? "Game Boy" : dir.substring(dir.lastIndexOf('/') + 1), String(roms) + " games");
             if (entries.empty()) {
-                text("Здесь нет игр .gb / .gbc", 6, 30);
-                text("Положи ROM-файлы на SD", 6, 54, DIM);
-                text("в любую папку.", 6, 78, DIM);
+                text("No .gb / .gbc games here", 6, 30);
+                text("Put ROM files on the SD", 6, 54, DIM);
+                text("card, in any folder.", 6, 78, DIM);
             }
             int first = firstVisible(sel, entries.size());
             for (int i = 0; i < ROWS && first + i < (int)entries.size(); i++) {
@@ -267,7 +267,7 @@ String pickRom() {
                 listRow(i, e.dir ? e.name + "/" : e.name.substring(0, e.name.lastIndexOf('.')), "", first + i == sel,
                         e.dir ? DIM : FG);
             }
-            footer(stream::running() ? "P — стрим: вкл" : "P — на телефон", "H — клавиши");
+            footer(stream::running() ? "P — stream: on" : "P — to phone", "H — keys");
             redraw = false;
         }
         Keys keys = poll();
@@ -299,9 +299,9 @@ String pickRom() {
             settings.stream = !stream::running();
             saveSettings();
             if (settings.stream) {
-                message("Трансляция", "Включаю Wi-Fi…");
+                message("Stream", "Starting Wi-Fi…");
                 if (stream::start()) streamInfo();
-                else message("Не хватает памяти", "Wi-Fi не запустился.", memoryReport());
+                else message("Not enough memory", "Wi-Fi did not start.", memoryReport());
                 endPoll(keys);
                 waitKey();
             } else {
@@ -325,12 +325,12 @@ String pickRom() {
 void drawHelp() {
     const char *k = settings.keys;
     String rows[6][2] = {
-        {keyName(k[6]) + " " + keyName(k[5]) + " " + keyName(k[7]) + " " + keyName(k[4]), "крестовина"},
+        {keyName(k[6]) + " " + keyName(k[5]) + " " + keyName(k[7]) + " " + keyName(k[4]), "D-pad"},
         {keyName(k[0]) + "    " + keyName(k[1]), "A    B"},
         {keyName(k[3]), "Start"},
         {keyName(k[2]), "Select"},
-        {"\\   [ ]", "экран, сдвиг"},
-        {"`   - =", "меню, громкость"},
+        {"\\   [ ]", "screen, scroll"},
+        {"`   - =", "menu, volume"},
     };
     lcd().fillScreen(BG);  // no header: six lines take the whole screen
     for (int i = 0; i < 6; i++) {
@@ -344,7 +344,7 @@ bool reservedKey(char c) { return strchr("`\\[]-=f", c) != nullptr; }
 
 // Waits for a key to give a Game Boy button: its code, or 0 if cancelled with ` / Esc / Backspace.
 char captureKey(const String &button) {
-    footer("Клавиша для " + button + "…", "` — отмена");
+    footer("Key for " + button + "…", "` — cancel");
     while (true) {
         Keys keys = poll();
         char c = 0;
@@ -358,30 +358,30 @@ char captureKey(const String &button) {
             for (char w : keys.k.word)
                 if (keys.hit(w)) c = tolower(w);
         endPoll(keys);
-        if (c && reservedKey(c)) footer(keyName(c) + " уже занята", "` — отмена");
+        if (c && reservedKey(c)) footer(keyName(c) + " is reserved", "` — cancel");
         else if (c) return c;
         delay(10);
     }
 }
 
-// Pause menu → Клавиши: one key per Game Boy button, a key taken from another button swaps with it.
+// Pause menu → Keys: one key per Game Boy button, a key taken from another button swaps with it.
 void keysMenu() {
     static const int ORDER[8] = {6, 7, 5, 4, 0, 1, 3, 2};  // ↑ ↓ ← → A B Start Select
-    static const char *const NAMES[8] = {"A", "B", "Select", "Start", "вправо", "влево", "вверх", "вниз"};
+    static const char *const NAMES[8] = {"A", "B", "Select", "Start", "Right", "Left", "Up", "Down"};
     constexpr int N = 10;  // the buttons, then "reset" and "help"
     int sel = 0;
     bool redraw = true;
     while (true) {
         if (redraw) {
             lcd().fillScreen(BG);
-            header("Клавиши");
+            header("Keys");
             int first = firstVisible(sel, N);
             for (int i = 0; i < ROWS && first + i < N; i++) {
                 int it = first + i;
                 if (it < 8) listRow(i, NAMES[ORDER[it]], keyName(settings.keys[ORDER[it]]), it == sel);
-                else listRow(i, it == 8 ? "Как было" : "Подсказка", "", it == sel);
+                else listRow(i, it == 8 ? "Reset to default" : "Show all keys", "", it == sel);
             }
-            footer("Enter — назначить", "` — назад");
+            footer("Enter — change", "` — back");
             redraw = false;
         }
         Keys keys = poll();
@@ -417,12 +417,12 @@ void keysMenu() {
 
 void streamInfo() {
     lcd().fillScreen(BG);
-    header("Трансляция на телефон");
+    header("Stream to a phone");
     text("Wi-Fi: " + String(stream::SSID), 6, 28);
-    text("пароль: " + String(stream::PASSWORD), 6, 50);
+    text("password: " + String(stream::PASSWORD), 6, 50);
     text("Safari: " + String(stream::URL), 6, 72, ACCENT);
-    text("Кнопки на телефоне —", 6, 94, DIM);
-    text("«Кнопки» в углу страницы.", 6, 112, DIM);
+    text("For touch buttons, tap", 6, 94, DIM);
+    text("Buttons in the page corner.", 6, 112, DIM);
 }
 
 void applyVolume() { M5Cardputer.Speaker.setVolume(settings.sound ? VOLUME[settings.volume] : 0); }
@@ -439,26 +439,26 @@ MenuResult menu() {
     while (true) {
         if (redraw) {
             lcd().fillScreen(BG);
-            header(emu::title(), stream::running() ? String(stream::viewers()) + " на тел." : "");
+            header(emu::title(), stream::running() ? String(stream::viewers()) + " on phone" : "");
             int n = items.size(), first = firstVisible(sel, n);
             for (int i = 0; i < ROWS && first + i < n; i++) {
                 int it = items[first + i];
                 String label, value;
                 switch (it) {
-                    case RESUME: label = "Продолжить"; break;
-                    case SCREEN: label = "Экран", value = screen::modeName((screen::Mode)settings.mode); break;
+                    case RESUME: label = "Resume"; break;
+                    case SCREEN: label = "Screen", value = screen::modeName((screen::Mode)settings.mode); break;
                     case CPU: label = "CPU", value = emu::executionModeName((emu::ExecutionMode)settings.execution); break;
-                    case PALETTE: label = "Цвета", value = emu::dmgPaletteName(settings.palette); break;
-                    case SOUND: label = "Звук", value = settings.sound ? "вкл" : "выкл"; break;
-                    case VOLUME_ITEM: label = "Громкость", value = String(settings.volume) + "/10"; break;
-                    case STREAM: label = "На телефон", value = stream::running() ? "вкл" : "выкл"; break;
-                    case KEYS: label = "Клавиши"; break;
-                    case RESET: label = "Начать заново"; break;
-                    case QUIT: label = "Выйти к списку игр"; break;
+                    case PALETTE: label = "Colours", value = emu::dmgPaletteName(settings.palette); break;
+                    case SOUND: label = "Sound", value = settings.sound ? "on" : "off"; break;
+                    case VOLUME_ITEM: label = "Volume", value = String(settings.volume) + "/10"; break;
+                    case STREAM: label = "Stream to phone", value = stream::running() ? "on" : "off"; break;
+                    case KEYS: label = "Keys"; break;
+                    case RESET: label = "Restart game"; break;
+                    case QUIT: label = "Quit to game list"; break;
                 }
                 listRow(i, label, value, first + i == sel);
             }
-            footer("Enter — выбрать", "` — назад");
+            footer("Enter — select", "` — back");
             redraw = false;
         }
         Keys keys = poll();
@@ -501,13 +501,13 @@ MenuResult menu() {
                 case STREAM:
                     settings.stream = !stream::running();
                     if (settings.stream) {
-                        message("Трансляция", "Включаю Wi-Fi…");
+                        message("Stream", "Starting Wi-Fi…");
                         if (stream::start()) {
                             streamInfo();
                         } else {
                             settings.stream = true;  // on at the next start, before a game takes the memory
-                            message("Не хватает памяти", "Игра заняла память.", memoryReport(),
-                                    "Включится в списке игр.");
+                            message("Not enough memory", "The game took the memory.", memoryReport(),
+                                    "Starts in the game list.");
                         }
                         endPoll(keys);
                         waitKey();
@@ -598,8 +598,8 @@ uint32_t cacheBudget(uint32_t saveBytes, uint32_t romBytes) {
 }
 
 String memoryReport() {
-    return "RAM: " + String(heap_caps_get_free_size(MALLOC_CAP_8BIT) / 1024) + " КБ, блок " +
-           String(heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) / 1024) + " КБ";
+    return "RAM: " + String(heap_caps_get_free_size(MALLOC_CAP_8BIT) / 1024) + " KB, block " +
+           String(heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) / 1024) + " KB";
 }
 
 // Reads pages out of the flash-mapped ROM into the RAM cache: a miss costs ~20 us, not an SD read.
@@ -618,9 +618,9 @@ constexpr uint32_t MIN_CACHE = 32 * 1024, FLASH_CACHE = 64 * 1024;
 void copyProgress(uint32_t done, uint32_t total) {
     if (done == 0 || done == 64 * 1024) {
         lcd().fillScreen(BG);
-        header("Первый запуск игры");
-        text("Копирую во флеш-память,", 6, 30);
-        text("потом запуск будет быстрым.", 6, 54, DIM);
+        header("First run of this game");
+        text("Copying to flash memory,", 6, 30);
+        text("later starts will be quick.", 6, 54, DIM);
     }
     lcd().fillRoundRect(8, 90, W - 16, 10, 5, LINE);
     lcd().fillRoundRect(8, 90, std::max<int>(10, (W - 16) * (uint64_t)done / total), 10, 5, ACCENT);
@@ -629,10 +629,10 @@ void copyProgress(uint32_t done, uint32_t total) {
 int gamesStarted = 0;  // since boot
 
 void play(const String &path) {
-    message("Загрузка", fit(path.substring(path.lastIndexOf('/') + 1), W - 12));
+    message("Loading", fit(path.substring(path.lastIndexOf('/') + 1), W - 12));
     SdRom rom(path);
     if (!rom.f) {
-        message("Не открылось", "Файл не читается с SD.", "", "Любая клавиша — назад");
+        message("Could not open", "Can't read the file on SD.", "", "Any key — back");
         waitKey();
         return;
     }
@@ -656,11 +656,11 @@ void play(const String &path) {
             prefs.begin("gb", false);
             prefs.putString("next", path);
             prefs.end();
-            message("Переключаю игру", "Перезагрузка…");
+            message("Switching game", "Restarting…");
             delay(300);
             ESP.restart();
         }
-        message("Не запускается", err, memoryReport(), "Любая клавиша — назад");
+        message("Can't start", err, memoryReport(), "Any key — back");
         waitKey();
         return;
     }
@@ -732,9 +732,9 @@ void play(const String &path) {
                 emu::setExecutionMode(emu::COMPATIBLE);
                 saveSettings();
             }
-            message("Игра упала", String("Ошибка: ") + emu::error(),
-                    fastFailed ? "Быстрый CPU отключён; повтори запуск." : "Сохранение записано.",
-                    "Любая клавиша — назад");
+            message("Game crashed", String("Error: ") + emu::error(),
+                    fastFailed ? "Fast CPU is off now; start again." : "The save was written.",
+                    "Any key — back");
             writeSave(save);
             waitKey();
             break;
@@ -748,7 +748,7 @@ void play(const String &path) {
         if (millis() - hudAt >= 1000) {
             if (screen::hud()[0]) {
                 char line[40];
-                snprintf(line, sizeof(line), "%u fps · %u кадр · %.1f мс", (unsigned)hudFrames, (unsigned)hudDrawn,
+                snprintf(line, sizeof(line), "%u fps · %u drawn · %.1f ms", (unsigned)hudFrames, (unsigned)hudDrawn,
                          hudFrames ? hudUs / 1000.0f / hudFrames : 0.0f);
                 screen::setHud(line);
             }
@@ -809,10 +809,10 @@ void setup() {
     applyVolume();
 
     Serial.printf("boot: heap %u free, largest %u\n", ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
-    message("Game Boy", "Ищу SD-карту…");
+    message("Game Boy", "Looking for the SD card…");
     sdSpi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
     while (!SD.begin(SD_CS, sdSpi, 25000000)) {
-        message("Нет SD-карты", "Вставь карту с играми", "и нажми любую клавишу.");
+        message("No SD card", "Insert a card with games", "and press any key.");
         waitKey();
     }
 }

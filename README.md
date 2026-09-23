@@ -3,9 +3,9 @@
 Game Boy and Game Boy Color emulator ([Walnut-CGB](https://github.com/Mr-PauI/Walnut-CGB) core) with two
 extras for the small screen:
 
-- **Readable screen modes.** `лупа ×1.5` fills the full 240 px width with no dropped pixel columns and
+- **Readable screen modes.** `zoom ×1.5` fills the full 240 px width with no dropped pixel columns and
   shows 90 of the 144 lines. Hold `[` or `]` to scroll the view up or down. `1:1` shows 135 lines
-  pixel for pixel. `весь кадр` is the stock squeeze.
+  pixel for pixel. `full frame` is the stock squeeze.
 - **Stream to a phone.** The Cardputer starts a Wi-Fi network, and Safari on the phone shows the game
   full screen. You play on the Cardputer keyboard or on the phone's touch buttons.
 
@@ -26,14 +26,14 @@ when you open the menu, when you quit, and every 30 s if the game changed them.
 | `-` `=` | volume |
 | `` ` `` | menu: screen, colours for original Game Boy games, sound, stream, keys, restart, quit |
 
-The Game Boy buttons can be moved to other keys in the pause menu under **Клавиши**: pick a button, press
+The Game Boy buttons can be moved to other keys in the pause menu under **Keys**: pick a button, press
 Enter, then press the new key. A key already used by another button swaps with it. `` ` `` `\` `[` `]`
-`-` `=` `F` stay reserved. **Как было** restores the table above.
+`-` `=` `F` stay reserved. **Reset to default** restores the table above.
 
-The pause menu also has a **CPU** profile. `совместимый` is the default and uses the conservative
-Walnut-CGB execution path. `быстрый*` uses Walnut-CGB dual-fetch dispatch; it can be about 8% faster
+The pause menu also has a **CPU** profile. `compatible` is the default and uses the conservative
+Walnut-CGB execution path. `fast*` uses Walnut-CGB dual-fetch dispatch; it can be about 8% faster
 on the ESP32-S3, but is experimental because some ROMs are known to crash with it. If that happens,
-the emulator saves the game and automatically returns to `совместимый` for the next launch.
+the emulator saves the game and automatically returns to `compatible` for the next launch.
 
 ## Streaming to an iPhone
 
@@ -43,10 +43,10 @@ the emulator saves the game and automatically returns to `совместимый
    network has no internet. Stay connected anyway.
 3. Open `http://192.168.4.1` in Safari. For a real full-screen view, use **Share → Add to Home Screen**
    and open it from there.
-4. **Кнопки** in the corner shows touch buttons on the phone.
+4. **Buttons** in the corner shows touch buttons on the phone.
 
 The stream sends only the lines that changed, at up to 30 fps, in messages of at most 4 KB: 6–80 KB/s in
-Zelda, about 220 KB/s in fast games like Donkey Kong Country. If the phone falls behind, it gets fewer frames. Set the Cardputer screen to `выключен` to give the emulator more time.
+Zelda, about 220 KB/s in fast games like Donkey Kong Country. If the phone falls behind, it gets fewer frames. Set the Cardputer screen to `off` to give the emulator more time.
 The page can't keep the phone awake over plain `http`, so set Auto-Lock to a longer time while playing.
 
 ## Memory

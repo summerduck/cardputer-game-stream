@@ -83,7 +83,7 @@ void loop(void *) {
 }  // namespace
 
 const char *modeName(Mode m) {
-    static const char *const names[] = {"лупа ×1.5", "1:1", "весь кадр", "выключен"};
+    static const char *const names[] = {"zoom ×1.5", "1:1", "full frame", "off"};
     return names[m];
 }
 

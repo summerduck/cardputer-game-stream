@@ -136,10 +136,10 @@ struct DmgPalette {
     uint32_t c[4];
 };
 const DmgPalette DMG[DMG_PALETTES] = {
-    {"контраст", {0xFFFFFF, 0xA8A8A8, 0x505050, 0x000000}},
+    {"contrast", {0xFFFFFF, 0xA8A8A8, 0x505050, 0x000000}},
     {"Pocket", {0xE8E8D8, 0xA0A090, 0x585848, 0x101008}},
-    {"зелёная", {0xE0F8D0, 0x88C070, 0x346856, 0x081820}},
-    {"оригинал", {0x9BBC0F, 0x8BAC0F, 0x306230, 0x0F380F}},
+    {"green", {0xE0F8D0, 0x88C070, 0x346856, 0x081820}},
+    {"original", {0x9BBC0F, 0x8BAC0F, 0x306230, 0x0F380F}},
 };
 
 uint16_t rgb565(uint32_t c) { return ((c >> 8) & 0xF800) | ((c >> 5) & 0x07E0) | ((c >> 3) & 0x001F); }
@@ -176,7 +176,7 @@ const char *load(RomSource &src, uint32_t cacheBytes, const uint8_t *mapped) {
     freeAll();
     source = &src;
     romBytes = src.size();
-    if (romBytes < 0x8000) return "файл меньше 32 КБ";
+    if (romBytes < 0x8000) return "file under 32 KB";
     numPages = (romBytes + PAGE_SIZE - 1) / PAGE_SIZE;
     uint32_t wanted = mapped ? 0 : cacheBytes / PAGE_SIZE;
     if (wanted > numPages) wanted = numPages;
@@ -187,7 +187,7 @@ const char *load(RomSource &src, uint32_t cacheBytes, const uint8_t *mapped) {
     nSlots = 0;
     if (!pageMap || !slots || !slotPage || !used) {
         freeAll();
-        return "мало памяти";
+        return "not enough memory";
     }
     hand = 0;
     misses = 0;
@@ -198,7 +198,7 @@ const char *load(RomSource &src, uint32_t cacheBytes, const uint8_t *mapped) {
         while (nSlots < wanted && (slots[nSlots] = static_cast<uint8_t *>(malloc(PAGE_SIZE)))) nSlots++;
         if (nSlots < PINNED + 8) {
             freeAll();
-            return "мало памяти";
+            return "not enough memory";
         }
         for (uint32_t i = 0; i < nSlots; i++) slotPage[i] = -1;
         for (uint32_t p = 0; p < PINNED; p++) loadPage(p);  // fills slots 0..PINNED-1
@@ -207,16 +207,16 @@ const char *load(RomSource &src, uint32_t cacheBytes, const uint8_t *mapped) {
     enum gb_init_error_e e = gb_init(&gb, romRead, romRead16, romRead32, ramRead, ramWrite, onError, nullptr);
     if (e == GB_INIT_CARTRIDGE_UNSUPPORTED) {
         freeAll();
-        return "картридж не поддерживается";
+        return "cartridge not supported";
     }
     if (e != GB_INIT_NO_ERROR) {
         freeAll();
-        return "повреждённый ROM";
+        return "damaged ROM";
     }
     uint32_t ramSize = gb_get_save_size(&gb);
     if (ramSize > sizeof(cartRam) / sizeof(cartRam[0]) * SAVE_CHUNK) {
         freeAll();
-        return "картридж не поддерживается";
+        return "cartridge not supported";
     }
     for (uint32_t i = 0; i * SAVE_CHUNK < ramSize; i++) {
         uint32_t n = std::min<uint32_t>(SAVE_CHUNK, ramSize - i * SAVE_CHUNK);
@@ -230,7 +230,7 @@ const char *load(RomSource &src, uint32_t cacheBytes, const uint8_t *mapped) {
         }
         if (!cartRam[i]) {
             freeAll();
-            return "мало памяти для сохранения";
+            return "no memory for the save";
         }
         memset(cartRam[i], 0xFF, n);
     }
@@ -266,7 +266,7 @@ void setExecutionMode(ExecutionMode mode) { execution = mode < EXECUTION_MODES ?
 ExecutionMode executionMode() { return execution; }
 
 const char *executionModeName(ExecutionMode mode) {
-    static const char *const names[] = {"совместимый", "быстрый*"};
+    static const char *const names[] = {"compatible", "fast*"};
     return names[mode < EXECUTION_MODES ? mode : COMPATIBLE];
 }
 

@@ -2,7 +2,7 @@
 #pragma once
 
 static const char WEB_PAGE[] = R"html(<!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
@@ -62,8 +62,8 @@ body.pad-on #ab{display:block}
   <div class="pad" id="ab"><div data-b="2" style="left:0;top:62px">B</div><div data-b="1" style="left:86px;top:12px">A</div></div>
   <div class="pad" id="ss"><div data-b="4">SELECT</div><div data-b="8">START</div></div>
 </div>
-<div id="status">Подключаюсь к Cardputer…</div>
-<button id="padBtn">Кнопки</button>
+<div id="status">Connecting to Cardputer…</div>
+<button id="padBtn">Buttons</button>
 <script>
 const W = 160, H = 144;
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
@@ -109,7 +109,7 @@ function connect() {
   ws.binaryType = 'arraybuffer';
   ws.onopen = () => { statusEl.textContent = ''; sendButtons(); };
   ws.onmessage = e => onFrame(e.data);
-  ws.onclose = () => { statusEl.textContent = 'Нет связи с Cardputer, переподключаюсь…'; setTimeout(connect, 1000); };
+  ws.onclose = () => { statusEl.textContent = 'Lost Cardputer, reconnecting…'; setTimeout(connect, 1000); };
   ws.onerror = () => ws.close();
 }
 
