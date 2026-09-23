@@ -5,6 +5,7 @@ Firmware for the [M5Stack Cardputer ADV](https://docs.m5stack.com/en/core/Cardpu
 | App | What it does |
 |---|---|
 | [`rsvp-reader`](rsvp-reader/) | Speed reader: shows a book one word at a time with the focus letter highlighted (RSVP). Reads `.txt`, `.epub` and `.fb2`, including Cyrillic. |
+| [`pomodoro`](pomodoro/) | Pomodoro timer: focus and break rounds with a chime, big countdown, settings kept in flash. |
 | [`samsung-remote`](samsung-remote/) | Infrared remote for Samsung TVs / The Freestyle projector, plus a Bluetooth keyboard for typing on them. |
 
 Ready-made `.bin` files are on the [Releases](../../releases) page.
@@ -17,9 +18,9 @@ Ready-made `.bin` files are on the [Releases](../../releases) page.
 
 ## Building
 
-Both apps are [PlatformIO](https://platformio.org/) projects:
+All apps are [PlatformIO](https://platformio.org/) projects:
 
 ```sh
-cd rsvp-reader   # or samsung-remote
+cd rsvp-reader   # or pomodoro, samsung-remote
 pio run          # -> .pio/build/cardputer-adv/firmware.bin
 ```
