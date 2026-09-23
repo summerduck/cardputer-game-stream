@@ -24,7 +24,16 @@ AsyncWebServer *server = nullptr;
 AsyncWebSocket *ws = nullptr;
 codec::Encoder encoder;
 std::atomic<bool> newViewer{false};
-std::atomic<uint8_t> buttons{0};
+// Pad states in the order they arrived. Wi-Fi often delivers a short tap's press and release together,
+// between two emulated frames: played back one by one, each state lasts at least HOLD_FRAMES.
+QueueHandle_t padStates = nullptr;
+constexpr int HOLD_FRAMES = 2;
+
+// When full, the oldest state goes: the last one must always arrive, or a button stays held.
+void pushPad(uint8_t b) {
+    uint8_t old;
+    while (xQueueSend(padStates, &b, 0) != pdTRUE) xQueueReceive(padStates, &old, 0);
+}
 uint32_t lastSent = 0, frames = 0, messages = 0;
 bool on = false;
 
@@ -33,11 +42,11 @@ void onEvent(AsyncWebSocket *, AsyncWebSocketClient *client, AwsEventType type, 
         client->setCloseClientOnQueueFull(false);
         newViewer = true;
     } else if (type == WS_EVT_DISCONNECT) {
-        buttons = 0;
+        pushPad(0);
     } else if (type == WS_EVT_DATA) {
         auto *info = static_cast<AwsFrameInfo *>(arg);
         // [2, buttons] from the on-screen pad
-        if (info->final && info->index == 0 && info->len == 2 && len == 2 && data[0] == 2) buttons = data[1];
+        if (info->final && info->index == 0 && info->len == 2 && len == 2 && data[0] == 2) pushPad(data[1]);
     }
 }
 
@@ -47,6 +56,7 @@ bool start() {
     if (on) return true;
     // Wi-Fi allocates many small buffers: the total counts, not the largest block.
     if (heap_caps_get_free_size(MALLOC_CAP_8BIT) < NEEDS_HEAP) return false;
+    if (!padStates) padStates = xQueueCreate(16, 1);
     WiFi.mode(WIFI_AP);
     WiFi.softAP(SSID, PASSWORD);
     WiFi.setSleep(false);  // power save adds tens of ms to every frame
@@ -72,7 +82,7 @@ void stop() {
     ws = nullptr;
     WiFi.softAPdisconnect(true);
     WiFi.mode(WIFI_OFF);
-    buttons = 0;
+    pushPad(0);
 }
 
 bool running() { return on; }
@@ -111,6 +121,12 @@ void offer(const uint8_t frame[144][160], const uint16_t *palette, int paletteSi
 uint32_t sentFrames() { return frames; }
 uint32_t sentMessages() { return messages; }
 
-uint8_t phoneButtons() { return buttons; }
+uint8_t phoneButtons() {
+    static uint8_t current = 0;
+    static int held = 0;
+    if (held < HOLD_FRAMES) held++;
+    if (padStates && held >= HOLD_FRAMES && xQueueReceive(padStates, &current, 0) == pdTRUE) held = 0;
+    return current;
+}
 
 }  // namespace stream

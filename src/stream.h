@@ -21,7 +21,8 @@ void offer(const uint8_t frame[144][160], const uint16_t *palette, int paletteSi
 uint32_t sentFrames();
 uint32_t sentMessages();
 
-// Buttons held on the phone's on-screen pad (emu::Button bits).
+// Buttons held on the phone's on-screen pad (emu::Button bits). Call once per emulated frame:
+// states that arrived together are handed out one at a time, so a quick tap is not lost.
 uint8_t phoneButtons();
 
 }  // namespace stream
