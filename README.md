@@ -95,7 +95,10 @@ tools/replay_server.py test/out/<game>.stream   # the phone page against a recor
 The host run checks that every streamed frame decodes back exactly.
 ```
 
-Every 5 s the serial log (115200) prints fps, µs per emulated frame, page misses, free heap and the
-largest free block, the screen task's unused stack, and stream frames/messages.
+Every 5 s the serial log (USB, 115200) prints the game, where its ROM is read from (flash or SD), the
+CPU, screen and sound settings, then fps, µs per emulated frame, page misses, free heap and the largest
+free block, the screen task's unused stack, and stream frames/messages. Boot prints the reset reason
+and the `gbrom` size. Connect the Cardputer by USB and run `pio device monitor`: lines get timestamps,
+a copy goes to `logs/`, and crash backtraces are decoded against the last `pio run` build.
 
 Licenses: Walnut-CGB and minigb_apu are MIT (`src/core/LICENSE-*`). PT Sans is under OFL.

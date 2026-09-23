@@ -836,9 +836,13 @@ void play(const String &path) {
         }
         if (millis() - statAt >= 5000) {
             float sec = (millis() - statAt) / 1000.0f;
-            Serial.printf("%.1f fps, drawn %.1f fps, emu %u us/frame, %u page misses, heap %u (largest %u), "
+            // Complete on its own line: a monitor attached mid-game still sees what is running and how.
+            Serial.printf("[%s | %s, cache %u | cpu %s | screen %s | sound %s] "
+                          "%.1f fps, drawn %.1f fps, emu %u us/frame, %u page misses, heap %u (largest %u), "
                           "screen stack left %u, viewers %d, stream %u frames %u messages\n",
-                          frames / sec, drawn / sec, frames ? busyUs / frames : 0, emu::pageMisses() - missesAt,
+                          emu::title(), mapped ? "flash" : "SD", emu::cacheSlots(),
+                          emu::executionModeName(emu::executionMode()), screen::modeName(screen::mode()),
+                          settings.sound ? "on" : "off", frames / sec, drawn / sec, frames ? busyUs / frames : 0, emu::pageMisses() - missesAt,
                           ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT), screen::stackLeft(),
                           stream::viewers(), stream::sentFrames(), stream::sentMessages());
             frames = drawn = busyUs = 0;
@@ -867,7 +871,8 @@ void setup() {
     M5Cardputer.Speaker.begin();
     applyVolume();
 
-    Serial.printf("boot: heap %u free, largest %u\n", ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+    Serial.printf("boot: reset reason %d, heap %u free, largest %u, gbrom %u KB\n", (int)esp_reset_reason(),
+                  ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT), flashrom::capacity() / 1024);
     message("Game Boy", "Looking for the SD card…");
     sdSpi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
     while (!SD.begin(SD_CS, sdSpi, 25000000)) {

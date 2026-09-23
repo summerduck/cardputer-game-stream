@@ -1,3 +1,5 @@
 test/out/
 .pio/
 dist/
+logs/
+platformio-device-monitor-*.log
