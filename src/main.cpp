@@ -24,7 +24,8 @@ M5GFX &lcd() { return M5Cardputer.Display; }
 constexpr int SD_SCK = 40, SD_MISO = 39, SD_MOSI = 14, SD_CS = 12;
 SPIClass sdSpi(HSPI);
 
-constexpr uint16_t BG = TFT_BLACK, FG = TFT_WHITE, DIM = 0xBDF7, ACCENT = 0xFD20, SELECT = 0x39E7, LINE = 0x4A69;
+constexpr uint16_t BG = TFT_BLACK, FG = TFT_WHITE, DIM = 0xBDF7, ACCENT = 0xFD20, SELECT = 0x39E7, LINE = 0x4A69,
+                   OK = 0x3EEB;
 constexpr int W = 240, H = 135;
 constexpr int ROW_TOP = 25, ROW_H = 22, ROWS = 4, FOOTER_Y = 113;
 
@@ -171,6 +172,27 @@ void header(const String &title, const String &right = "") {
     lcd().drawFastHLine(0, 23, W, LINE);
 }
 
+// The phone stream's state for the top right corner: off, Wi-Fi up with no page open, or pages open.
+String phoneStatus(uint16_t *color = nullptr) {
+    int n = stream::viewers();
+    uint16_t c = !stream::running() ? DIM : n ? OK : ACCENT;
+    if (color) *color = c;
+    return !stream::running() ? "stream off" : n ? String(n) + " connected" : "waiting";
+}
+
+// A header with the phone status on the right. Returns the status shown, for redrawing when it changes.
+String statusHeader(const String &title) {
+    uint16_t c;
+    String status = phoneStatus(&c);
+    int sw = lcd().textWidth(status);
+    lcd().fillRect(0, 0, W, 23, BG);
+    text(fit(title, W - 26 - sw), 4, -2);
+    text(status, W - 4, -2, c, top_right);
+    lcd().fillCircle(W - 12 - sw, 11, 3, c);
+    lcd().drawFastHLine(0, 23, W, LINE);
+    return status;
+}
+
 void footer(const String &left, const String &right) {
     lcd().fillRect(0, FOOTER_Y, W, H - FOOTER_Y, BG);
     text(fit(left, W - 16 - lcd().textWidth(right)), 4, FOOTER_Y - 2, DIM);
@@ -241,7 +263,7 @@ String parentDir(const String &dir) {
 }
 
 void drawHelp();
-void streamInfo();
+void phoneScreen(bool inGame);
 String memoryReport();
 
 // Returns the path of the chosen ROM.
@@ -251,11 +273,13 @@ String pickRom() {
     std::vector<Entry> entries = listDir(dir);
     int sel = 0;
     bool redraw = true;
+    String title, status;
     while (true) {
         if (redraw) {
             lcd().fillScreen(BG);
             int roms = std::count_if(entries.begin(), entries.end(), [](const Entry &e) { return !e.dir; });
-            header(dir == "/" ? "Game Boy" : dir.substring(dir.lastIndexOf('/') + 1), String(roms) + " games");
+            title = (dir == "/" ? "Game Boy" : dir.substring(dir.lastIndexOf('/') + 1)) + " · " + String(roms);
+            status = statusHeader(title);
             if (entries.empty()) {
                 text("No .gb / .gbc games here", 6, 30);
                 text("Put ROM files on the SD", 6, 54, DIM);
@@ -267,8 +291,10 @@ String pickRom() {
                 listRow(i, e.dir ? e.name + "/" : e.name.substring(0, e.name.lastIndexOf('.')), "", first + i == sel,
                         e.dir ? DIM : FG);
             }
-            footer(stream::running() ? "P — stream: on" : "P — to phone", "H — keys");
+            footer("P — phone", "H — keys");
             redraw = false;
+        } else if (phoneStatus() != status) {
+            status = statusHeader(title);
         }
         Keys keys = poll();
         int n = entries.size();
@@ -296,17 +322,8 @@ String pickRom() {
                 if (entries[i].name == from) sel = i;
             redraw = true;
         } else if (keys.hit('p') || keys.hit('P')) {
-            settings.stream = !stream::running();
-            saveSettings();
-            if (settings.stream) {
-                message("Stream", "Starting Wi-Fi…");
-                if (stream::start()) streamInfo();
-                else message("Not enough memory", "Wi-Fi did not start.", memoryReport());
-                endPoll(keys);
-                waitKey();
-            } else {
-                stream::stop();
-            }
+            endPoll(keys);
+            phoneScreen(false);
             redraw = true;
         } else if (keys.hit('h') || keys.hit('H')) {
             drawHelp();
@@ -415,14 +432,56 @@ void keysMenu() {
     }
 }
 
-void streamInfo() {
-    lcd().fillScreen(BG);
-    header("Stream to a phone");
-    text("Wi-Fi: " + String(stream::SSID), 6, 28);
-    text("password: " + String(stream::PASSWORD), 6, 50);
-    text("Safari: " + String(stream::URL), 6, 72, ACCENT);
-    text("For touch buttons, tap", 6, 94, DIM);
-    text("Buttons in the page corner.", 6, 112, DIM);
+// P in the game list, Phone in the pause menu: the status on top, how to connect, Enter turns Wi-Fi on / off.
+void phoneScreen(bool inGame) {
+    String status, note1, note2;
+    bool redraw = true;
+    while (true) {
+        if (redraw) {
+            lcd().fillScreen(BG);
+            status = statusHeader("Phone");
+            bool on = stream::running();
+            text("Wi-Fi:", 6, 28, DIM);
+            text(stream::SSID, 76, 28, on ? FG : DIM);
+            text("pass:", 6, 50, DIM);
+            text(stream::PASSWORD, 76, 50, on ? FG : DIM);
+            text("Safari:", 6, 72, DIM);
+            text(stream::URL, 76, 72, on ? ACCENT : DIM);
+            if (note1.length()) {
+                text(note1, 6, 94, ACCENT);
+                footer(note2, "` — back");
+            } else {
+                text(on ? "Touch pad: Buttons on the page" : "", 6, 94, DIM);
+                footer(on ? "Enter — stream off" : "Enter — stream on", "` — back");
+            }
+            redraw = false;
+        } else if (phoneStatus() != status) {
+            status = statusHeader("Phone");
+        }
+        Keys keys = poll();
+        if (keys.back()) {
+            endPoll(keys);
+            return;
+        }
+        if (keys.enter()) {
+            note1 = note2 = "";
+            if (stream::running()) {
+                stream::stop();
+                settings.stream = false;
+            } else {
+                footer("Starting Wi-Fi…", "");
+                settings.stream = true;  // if it fails in a game: on at the next start, before a game takes the memory
+                if (!stream::start()) {
+                    note1 = "Not enough memory";
+                    note2 = inGame ? "Starts in the game list." : "Wi-Fi did not start.";
+                }
+            }
+            saveSettings();
+            redraw = true;
+        }
+        endPoll(keys);
+        delay(15);
+    }
 }
 
 void applyVolume() { M5Cardputer.Speaker.setVolume(settings.sound ? VOLUME[settings.volume] : 0); }
@@ -436,10 +495,11 @@ MenuResult menu() {
         if (i != PALETTE || !emu::isColor()) items.push_back(i);
     int sel = 0;
     bool redraw = true;
+    String status;
     while (true) {
         if (redraw) {
             lcd().fillScreen(BG);
-            header(emu::title(), stream::running() ? String(stream::viewers()) + " on phone" : "");
+            status = statusHeader(emu::title());
             int n = items.size(), first = firstVisible(sel, n);
             for (int i = 0; i < ROWS && first + i < n; i++) {
                 int it = items[first + i];
@@ -451,7 +511,7 @@ MenuResult menu() {
                     case PALETTE: label = "Colours", value = emu::dmgPaletteName(settings.palette); break;
                     case SOUND: label = "Sound", value = settings.sound ? "on" : "off"; break;
                     case VOLUME_ITEM: label = "Volume", value = String(settings.volume) + "/10"; break;
-                    case STREAM: label = "Stream to phone", value = stream::running() ? "on" : "off"; break;
+                    case STREAM: label = "Phone"; break;
                     case KEYS: label = "Keys"; break;
                     case RESET: label = "Restart game"; break;
                     case QUIT: label = "Quit to game list"; break;
@@ -460,6 +520,8 @@ MenuResult menu() {
             }
             footer("Enter — select", "` — back");
             redraw = false;
+        } else if (phoneStatus() != status) {
+            status = statusHeader(emu::title());
         }
         Keys keys = poll();
         int n = items.size();
@@ -499,21 +561,8 @@ MenuResult menu() {
                     applyVolume();
                     break;
                 case STREAM:
-                    settings.stream = !stream::running();
-                    if (settings.stream) {
-                        message("Stream", "Starting Wi-Fi…");
-                        if (stream::start()) {
-                            streamInfo();
-                        } else {
-                            settings.stream = true;  // on at the next start, before a game takes the memory
-                            message("Not enough memory", "The game took the memory.", memoryReport(),
-                                    "Starts in the game list.");
-                        }
-                        endPoll(keys);
-                        waitKey();
-                    } else {
-                        stream::stop();
-                    }
+                    endPoll(keys);
+                    phoneScreen(true);
                     break;
                 case KEYS:
                     endPoll(keys);

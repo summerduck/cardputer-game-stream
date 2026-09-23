@@ -37,8 +37,11 @@ the emulator saves the game and automatically returns to `compatible` for the ne
 
 ## Streaming to an iPhone
 
-1. In the game list, press `P`. The stream stays on until you press `P` again. Turn it on here, before
-   starting a game: a running game can hold too much memory for Wi-Fi to start from its menu.
+1. In the game list, press `P` to open the **Phone** screen (also in the pause menu), then Enter. The
+   stream stays on until you turn it off there. Turn it on from the game list, before starting a game:
+   a running game can hold too much memory for Wi-Fi to start from its menu.
+   The top right corner of the game list, the pause menu and the Phone screen shows `stream off`,
+   `waiting` (Wi-Fi is on, no page open) or `1 connected`.
 2. On the iPhone, join the Wi-Fi network **Cardputer-GB** (password `gameboy123`). iOS warns that the
    network has no internet. Stay connected anyway.
 3. Open `http://192.168.4.1` in Safari. For a real full-screen view, use **Share → Add to Home Screen**
