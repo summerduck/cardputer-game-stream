@@ -24,7 +24,7 @@ when you open the menu, when you quit, and every 30 s if the game changed them.
 | `\` | screen mode: zoom ×1.5 → 1:1 → whole frame → screen off |
 | `[` `]` (hold) | scroll the zoomed view up / down |
 | `-` `=` | volume |
-| `` ` `` | menu: screen, colours for original Game Boy games, sound, stream, keys, restart, quit |
+| `` ` `` | menu: screen, brightness, colours for original Game Boy games, sound, stream, keys, restart, quit |
 
 The Game Boy buttons can be moved to other keys in the pause menu under **Keys**: pick a button, press
 Enter, then press the new key. A key already used by another button swaps with it. `` ` `` `\` `[` `]`

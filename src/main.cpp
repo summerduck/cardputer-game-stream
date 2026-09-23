@@ -34,6 +34,8 @@ constexpr uint32_t SAVE_EVERY_MS = 30000;
 constexpr int VOLUME_LEVELS = 10;
 constexpr uint8_t VOLUME[VOLUME_LEVELS + 1] = {0, 3, 10, 23, 41, 64, 92, 125, 163, 207, 255};
 constexpr int SPEAKER_CH = 0;
+constexpr int BRIGHTNESS_LEVELS = 10;
+constexpr uint8_t BRIGHTNESS[BRIGHTNESS_LEVELS + 1] = {0, 10, 20, 35, 55, 80, 110, 145, 185, 225, 255};
 
 // Settings, kept in NVS
 Preferences prefs;
@@ -42,6 +44,7 @@ struct Settings {
     uint8_t palette = 0;
     bool sound = true;
     uint8_t volume = 5;
+    uint8_t brightness = 5;
     uint8_t execution = emu::COMPATIBLE;
     bool stream = false;
     String dir = "/";
@@ -57,6 +60,7 @@ void loadSettings() {
     settings.palette = prefs.getUChar("palette", settings.palette) % emu::DMG_PALETTES;
     settings.sound = prefs.getBool("sound", settings.sound);
     settings.volume = std::min<int>(prefs.getUChar("volume", settings.volume), VOLUME_LEVELS);
+    settings.brightness = constrain(prefs.getUChar("bright", settings.brightness), 1, BRIGHTNESS_LEVELS);
     settings.execution = prefs.getUChar("execution", settings.execution) % emu::EXECUTION_MODES;
     settings.stream = prefs.getBool("stream", settings.stream);
     settings.dir = prefs.getString("dir", settings.dir);
@@ -72,6 +76,7 @@ void saveSettings() {
     prefs.putUChar("palette", settings.palette);
     prefs.putBool("sound", settings.sound);
     prefs.putUChar("volume", settings.volume);
+    prefs.putUChar("bright", settings.brightness);
     prefs.putUChar("execution", settings.execution);
     prefs.putBool("stream", settings.stream);
     prefs.putString("dir", settings.dir);
@@ -489,7 +494,7 @@ void applyVolume() { M5Cardputer.Speaker.setVolume(settings.sound ? VOLUME[setti
 enum class MenuResult { Resume, Quit };
 
 MenuResult menu() {
-    enum Item { RESUME, SCREEN, CPU, PALETTE, SOUND, VOLUME_ITEM, STREAM, KEYS, RESET, QUIT, ITEMS };
+    enum Item { RESUME, SCREEN, BRIGHTNESS_ITEM, CPU, PALETTE, SOUND, VOLUME_ITEM, STREAM, KEYS, RESET, QUIT, ITEMS };
     std::vector<int> items;
     for (int i = 0; i < ITEMS; i++)
         if (i != PALETTE || !emu::isColor()) items.push_back(i);
@@ -507,6 +512,7 @@ MenuResult menu() {
                 switch (it) {
                     case RESUME: label = "Resume"; break;
                     case SCREEN: label = "Screen", value = screen::modeName((screen::Mode)settings.mode); break;
+                    case BRIGHTNESS_ITEM: label = "Brightness", value = String(settings.brightness) + "/10"; break;
                     case CPU: label = "CPU", value = emu::executionModeName((emu::ExecutionMode)settings.execution); break;
                     case PALETTE: label = "Colours", value = emu::dmgPaletteName(settings.palette); break;
                     case SOUND: label = "Sound", value = settings.sound ? "on" : "off"; break;
@@ -555,6 +561,10 @@ MenuResult menu() {
                 case SOUND:
                     settings.sound = !settings.sound;
                     applyVolume();
+                    break;
+                case BRIGHTNESS_ITEM:
+                    settings.brightness = constrain(settings.brightness + step, 1, BRIGHTNESS_LEVELS);
+                    screen::setBrightness(BRIGHTNESS[settings.brightness]);
                     break;
                 case VOLUME_ITEM:
                     settings.volume = constrain(settings.volume + step, 1, VOLUME_LEVELS);
@@ -850,10 +860,10 @@ void setup() {
     M5Cardputer.begin(cfg, true);
     Serial.begin(115200);
     lcd().setRotation(1);
-    lcd().setBrightness(80);
     lcd().loadFont(FONT_UI);
     loadSettings();
     screen::begin();
+    screen::setBrightness(BRIGHTNESS[settings.brightness]);
     M5Cardputer.Speaker.begin();
     applyVolume();
 

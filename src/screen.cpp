@@ -25,7 +25,7 @@ uint8_t zoomX[LW];  // screen column -> frame column for x1.5
 
 volatile Mode current = ZOOM;
 volatile int zoomPan = ZOOM_PAN_MAX, onePan = ONE_PAN_MAX;  // bottom: Zelda's text box and HUD
-constexpr uint8_t BRIGHTNESS = 80;
+uint8_t brightness = 80;
 volatile bool busy = false, paused = true, clearNeeded = true;
 TaskHandle_t task = nullptr;
 char hudText[48] = "";
@@ -95,10 +95,15 @@ void begin() {
 void setMode(Mode m) {
     current = m;
     clearNeeded = true;
-    if (!paused) lcd().setBrightness(m == OFF ? 0 : BRIGHTNESS);
+    if (!paused) lcd().setBrightness(m == OFF ? 0 : brightness);
 }
 
 Mode mode() { return current; }
+
+void setBrightness(uint8_t level) {
+    brightness = level;
+    lcd().setBrightness(paused || current != OFF ? level : 0);
+}
 
 void pan(int lines) {
     if (current == ZOOM) zoomPan = constrain(zoomPan + lines, 0, ZOOM_PAN_MAX);
@@ -126,13 +131,13 @@ const char *hud() { return hudText; }
 void pause() {
     paused = true;
     while (busy) delay(1);
-    lcd().setBrightness(BRIGHTNESS);  // menus need the backlight even in OFF mode
+    lcd().setBrightness(brightness);  // menus need the backlight even in OFF mode
 }
 
 void resume() {
     paused = false;
     clearNeeded = true;
-    lcd().setBrightness(current == OFF ? 0 : BRIGHTNESS);
+    lcd().setBrightness(current == OFF ? 0 : brightness);
 }
 
 }  // namespace screen

@@ -16,6 +16,7 @@ const char *modeName(Mode m);
 void begin();
 void setMode(Mode m);
 Mode mode();
+void setBrightness(uint8_t level);  // backlight 1..255, for the game and the menus
 void pan(int lines);  // moves the view by frame lines: < 0 up, > 0 down
 
 // Hands emu::frame to the screen task if the previous one is done. Call after a rendered frame.
